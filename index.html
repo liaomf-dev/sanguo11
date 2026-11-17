@@ -63,6 +63,9 @@ td.stat.hi i{background:var(--bar-hi)}
 td.total{font-family:var(--mono);font-weight:700;font-size:14px}
 td.skill{font-size:13px}
 td.skill.none{color:var(--muted)}
+.sk{font:inherit;color:var(--accent);background:none;border:1px dashed transparent;border-radius:4px;padding:1px 6px;cursor:pointer}
+.sk:hover{border-color:var(--accent);background:var(--accent-soft)}
+.sk.on{color:var(--surface);background:var(--accent);border-color:var(--accent)}
 .g{display:inline-block;width:22px;line-height:20px;border-radius:4px;font-family:var(--mono);font-size:12px;font-weight:500}
 .gS{color:var(--g-s);background:var(--g-s-bg);font-weight:700}
 .gA{color:var(--g-a);background:var(--g-a-bg)}
@@ -90,7 +93,7 @@ footer{font-size:12px;color:var(--muted);line-height:1.7}
     </select>
     <button class="reset" id="reset" type="button">重設</button>
   </div>
-  <div class="hint">第一次點擊由高到低，再點一次由低到高。數值 ≥ 90 以粗體標示。</div>
+  <div class="hint">點擊武將的特技，可篩選出所有擁有該特技的武將（再點一次取消）。第一次點擊由高到低，再點一次由低到高。數值 ≥ 90 以粗體標示。</div>
 
   <div class="tablebox">
     <table>
@@ -172,14 +175,21 @@ function render(){
       case 'num': return `<td class="num">${v}</td>`;
       case 'stat': return `<td class="stat${v>=90?' hi':''}${g}"><i style="width:calc((100% - 8px)*${v/100})"></i><span>${v}</span></td>`;
       case 'total': return `<td class="total">${v}</td>`;
-      case 'skill': return `<td class="skill${v?'':' none'}${g}">${v||'—'}</td>`;
+      case 'skill': return v?`<td class="skill${g}"><button type="button" class="sk${v===sk?' on':''}" data-sk="${v}" title="篩選擁有「${v}」的武將">${v}</button></td>`:`<td class="skill none${g}">—</td>`;
       case 'g': return `<td class="${g.trim()}"><span class="g g${v}">${v}</span></td>`;
     }
   }).join('')+'</tr>').join('');
 }
 
 let t; $('q').addEventListener('input',()=>{clearTimeout(t);t=setTimeout(render,120);});
-$('skill').onchange=render; $('apt').onchange=render;
+$('skill').onchange=render;
+body.addEventListener('click',e=>{
+  const b=e.target.closest('.sk'); if(!b) return;
+  const s=b.dataset.sk;
+  $('skill').value = $('skill').value===s ? '' : s;
+  render();
+  document.querySelector('.tablebox').scrollTop=0;
+}); $('apt').onchange=render;
 $('reset').onclick=()=>{$('q').value='';$('skill').value='';$('apt').value='';sortCol=8;dir=-1;render();};
 render();
 </script>
