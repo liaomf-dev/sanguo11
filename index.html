@@ -66,6 +66,9 @@ td.skill.none{color:var(--muted)}
 .sk{font:inherit;color:var(--accent);background:none;border:1px dashed transparent;border-radius:4px;padding:1px 6px;cursor:pointer}
 .sk:hover{border-color:var(--accent);background:var(--accent-soft)}
 .sk.on{color:var(--surface);background:var(--accent);border-color:var(--accent)}
+.gb{font:inherit;background:none;border:2px solid transparent;border-radius:5px;padding:0;cursor:pointer;line-height:0}
+.gb:hover{border-color:var(--accent)}
+.gb.on{border-color:var(--accent)}
 .g{display:inline-block;width:22px;line-height:20px;border-radius:4px;font-family:var(--mono);font-size:12px;font-weight:500}
 .gS{color:var(--g-s);background:var(--g-s-bg);font-weight:700}
 .gA{color:var(--g-a);background:var(--g-a-bg)}
@@ -88,12 +91,12 @@ footer{font-size:12px;color:var(--muted);line-height:1.7}
     <select id="skill" aria-label="依特技篩選"><option value="">全部特技</option></select>
     <select id="apt" aria-label="依適性篩選">
       <option value="">全部適性</option>
-      <option value="10">槍兵 S</option><option value="11">戟兵 S</option><option value="12">弩兵 S</option>
-      <option value="13">騎兵 S</option><option value="14">兵器 S</option><option value="15">水軍 S</option>
+      <option value="10S">槍兵 S</option><option value="11S">戟兵 S</option><option value="12S">弩兵 S</option>
+      <option value="13S">騎兵 S</option><option value="14S">兵器 S</option><option value="15S">水軍 S</option>
     </select>
     <button class="reset" id="reset" type="button">重設</button>
   </div>
-  <div class="hint">點擊武將的特技，可篩選出所有擁有該特技的武將（再點一次取消）。第一次點擊由高到低，再點一次由低到高。數值 ≥ 90 以粗體標示。</div>
+  <div class="hint">點擊武將的特技或適性等級，可篩選出相同條件的武將（再點一次取消）。第一次點擊由高到低，再點一次由低到高。數值 ≥ 90 以粗體標示。</div>
 
   <div class="tablebox">
     <table>
@@ -115,6 +118,7 @@ const COLS = [
   ['槍',10,'g',1],['戟',11,'g'],['弩',12,'g'],['騎',13,'g'],['兵',14,'g'],['水',15,'g']
 ];
 const GR = {S:4,A:3,B:2,C:1};
+const APT = {10:'槍兵',11:'戟兵',12:'弩兵',13:'騎兵',14:'兵器',15:'水軍'};
 let sortCol = 8, dir = -1;
 
 const $ = id => document.getElementById(id);
@@ -151,7 +155,7 @@ function key(r,i){
 
 function render(){
   const q=$('q').value.trim(), sk=$('skill').value, ap=$('apt').value;
-  let rows=DATA.filter(r=>(!q||r[2].includes(q)||r[9].includes(q))&&(!sk||r[9]===sk)&&(!ap||r[+ap]==='S'));
+  let rows=DATA.filter(r=>(!q||r[2].includes(q)||r[9].includes(q))&&(!sk||r[9]===sk)&&(!ap||r[+ap.slice(0,-1)]===ap.slice(-1)));
   rows.sort((a,b)=>{
     let x=key(a,sortCol), y=key(b,sortCol), d;
     if (typeof x==='string') {
@@ -176,7 +180,7 @@ function render(){
       case 'stat': return `<td class="stat${v>=90?' hi':''}${g}"><i style="width:calc((100% - 8px)*${v/100})"></i><span>${v}</span></td>`;
       case 'total': return `<td class="total">${v}</td>`;
       case 'skill': return v?`<td class="skill${g}"><button type="button" class="sk${v===sk?' on':''}" data-sk="${v}" title="篩選擁有「${v}」的武將">${v}</button></td>`:`<td class="skill none${g}">—</td>`;
-      case 'g': return `<td class="${g.trim()}"><span class="g g${v}">${v}</span></td>`;
+      case 'g': return `<td class="${g.trim()}"><button type="button" class="gb${ap===c[1]+v?' on':''}" data-ap="${c[1]+v}" title="篩選${APT[c[1]]} ${v} 的武將"><span class="g g${v}">${v}</span></button></td>`;
     }
   }).join('')+'</tr>').join('');
 }
@@ -184,6 +188,18 @@ function render(){
 let t; $('q').addEventListener('input',()=>{clearTimeout(t);t=setTimeout(render,120);});
 $('skill').onchange=render;
 body.addEventListener('click',e=>{
+  const a=e.target.closest('.gb');
+  if(a){
+    const sel=$('apt'), v=a.dataset.ap;
+    if(sel.value===v) sel.value='';
+    else {
+      if(![...sel.options].some(o=>o.value===v)){ // 例如 騎兵 A：下拉選單沒有的等級，臨時加入
+        const o=document.createElement('option'); o.value=v; o.textContent=`${APT[v.slice(0,-1)]} ${v.slice(-1)}`; sel.appendChild(o);
+      }
+      sel.value=v;
+    }
+    render(); document.querySelector('.tablebox').scrollTop=0; return;
+  }
   const b=e.target.closest('.sk'); if(!b) return;
   const s=b.dataset.sk;
   $('skill').value = $('skill').value===s ? '' : s;
