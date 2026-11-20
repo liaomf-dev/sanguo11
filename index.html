@@ -75,7 +75,10 @@ td.skill.none{color:var(--muted)}
 .gA{color:var(--g-a);background:var(--g-a-bg)}
 .gB{color:var(--g-b);background:var(--g-b-bg)}
 .gC{color:var(--g-c);background:var(--g-c-bg)}
-.old{display:inline-block;margin-left:6px;padding:0 5px;border-radius:4px;font-family:var(--body);font-size:11px;font-weight:700;line-height:18px;letter-spacing:0;color:var(--old);background:var(--old-bg);vertical-align:2px}
+.old{display:inline-block;margin-left:6px;padding:0 5px;border:1px solid transparent;border-radius:4px;font-family:var(--body);font-size:11px;font-weight:700;line-height:18px;letter-spacing:0;color:var(--old);background:var(--old-bg);vertical-align:2px;cursor:pointer}
+.old:hover{border-color:var(--old)}
+.old.on{color:var(--old-bg);background:var(--old);border-color:var(--old)}
+.old:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .empty{padding:40px;text-align:center;color:var(--muted)}
 footer{font-size:12px;color:var(--muted);line-height:1.7}
 @media (max-width:560px){th,td{padding:6px 7px}.name{font-size:14px}}
@@ -99,7 +102,7 @@ footer{font-size:12px;color:var(--muted);line-height:1.7}
     <select id="era" aria-label="依時代篩選"><option value="">全部武將</option><option value="hist">只看三國武將</option><option value="old">只看古武將</option></select>
     <button class="reset" id="reset" type="button">重設</button>
   </div>
-  <div class="hint">點擊武將的特技或適性等級，可篩選出相同條件的武將（再點一次取消）。第一次點擊由高到低，再點一次由低到高。數值 ≥ 90 以粗體標示。</div>
+  <div class="hint">點擊武將的特技、適性等級或「古」標籤，可篩選出相同條件的武將（再點一次取消）。第一次點擊由高到低，再點一次由低到高。數值 ≥ 90 以粗體標示。</div>
 
   <div class="tablebox">
     <table>
@@ -179,7 +182,7 @@ function render(){
   body.innerHTML=rows.map(r=>'<tr>'+COLS.map(c=>{
     const v=r[c[1]], g=c[3]?' grp':'';
     switch(c[2]){
-      case 'name': return `<td class="name">${v}${isOld(r)?'<span class="old" title="古武將">古</span>':''}</td>`;
+      case 'name': return `<td class="name">${v}${isOld(r)?`<button type="button" class="old${era==='old'?' on':''}" title="${era==='old'?'取消篩選古武將':'只看古武將'}">古</button>`:''}</td>`;
       case 'num': return `<td class="num">${v}</td>`;
       case 'stat': return `<td class="stat${v>=90?' hi':''}${g}"><i style="width:calc((100% - 8px)*${v/100})"></i><span>${v}</span></td>`;
       case 'total': return `<td class="total">${v}</td>`;
@@ -192,6 +195,7 @@ function render(){
 let t; $('q').addEventListener('input',()=>{clearTimeout(t);t=setTimeout(render,120);});
 $('skill').onchange=render;
 body.addEventListener('click',e=>{
+  if(e.target.closest('.old')){ $('era').value = $('era').value==='old' ? '' : 'old'; render(); document.querySelector('.tablebox').scrollTop=0; return; }
   const a=e.target.closest('.gb');
   if(a){
     const sel=$('apt'), v=a.dataset.ap;
