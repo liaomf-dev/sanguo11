@@ -13,6 +13,7 @@
   --accent:#1f6b52; --accent-soft:#e2efe9;
   --g-s:#b3261e; --g-s-bg:#fbe5e2; --g-a:#a35a00; --g-a-bg:#fcefd9; --g-b:#2f5f8a; --g-b-bg:#e3edf6; --g-c:#8a918c; --g-c-bg:transparent;
   --bar:#cfe2d8; --bar-hi:#1f6b52;
+  --old:#7a4a12; --old-bg:#f6ead6;
   --display:"Noto Serif TC","Songti TC","PMingLiU",serif;
   --body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
@@ -21,12 +22,12 @@
   --bg:#141917; --surface:#1b211e; --fg:#e4e9e5; --muted:#909a94; --line:#2c3430;
   --accent:#5fc49c; --accent-soft:#1f3229;
   --g-s:#ff8a7e; --g-s-bg:#3d1f1c; --g-a:#f0b45e; --g-a-bg:#382a14; --g-b:#8ab8e6; --g-b-bg:#1d2b3a; --g-c:#6d7570;
-  --bar:#24392f; --bar-hi:#5fc49c; color-scheme:dark}}
+  --bar:#24392f; --bar-hi:#5fc49c; --old:#e8bd7a; --old-bg:#3a2c18; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#141917; --surface:#1b211e; --fg:#e4e9e5; --muted:#909a94; --line:#2c3430;
   --accent:#5fc49c; --accent-soft:#1f3229;
   --g-s:#ff8a7e; --g-s-bg:#3d1f1c; --g-a:#f0b45e; --g-a-bg:#382a14; --g-b:#8ab8e6; --g-b-bg:#1d2b3a; --g-c:#6d7570;
-  --bar:#24392f; --bar-hi:#5fc49c; color-scheme:dark}
+  --bar:#24392f; --bar-hi:#5fc49c; --old:#e8bd7a; --old-bg:#3a2c18; color-scheme:dark}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px}
 .wrap{max-width:1240px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
 header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px}
@@ -74,6 +75,7 @@ td.skill.none{color:var(--muted)}
 .gA{color:var(--g-a);background:var(--g-a-bg)}
 .gB{color:var(--g-b);background:var(--g-b-bg)}
 .gC{color:var(--g-c);background:var(--g-c-bg)}
+.old{display:inline-block;margin-left:6px;padding:0 5px;border-radius:4px;font-family:var(--body);font-size:11px;font-weight:700;line-height:18px;letter-spacing:0;color:var(--old);background:var(--old-bg);vertical-align:2px}
 .empty{padding:40px;text-align:center;color:var(--muted)}
 footer{font-size:12px;color:var(--muted);line-height:1.7}
 @media (max-width:560px){th,td{padding:6px 7px}.name{font-size:14px}}
@@ -94,6 +96,7 @@ footer{font-size:12px;color:var(--muted);line-height:1.7}
       <option value="10S">槍兵 S</option><option value="11S">戟兵 S</option><option value="12S">弩兵 S</option>
       <option value="13S">騎兵 S</option><option value="14S">兵器 S</option><option value="15S">水軍 S</option>
     </select>
+    <select id="era" aria-label="依時代篩選"><option value="">全部武將</option><option value="hist">只看三國武將</option><option value="old">只看古武將</option></select>
     <button class="reset" id="reset" type="button">重設</button>
   </div>
   <div class="hint">點擊武將的特技或適性等級，可篩選出相同條件的武將（再點一次取消）。第一次點擊由高到低，再點一次由低到高。數值 ≥ 90 以粗體標示。</div>
@@ -105,7 +108,7 @@ footer{font-size:12px;color:var(--muted);line-height:1.7}
     </table>
   </div>
 
-  <footer>欄位說明：統＝統率、武＝武力、智＝智力、政＝政治、魅＝魅力、綜＝五維總和。相性數值 0–149，數值越接近越容易結交。適性等級 S ＞ A ＞ B ＞ C。</footer>
+  <footer>欄位說明：統＝統率、武＝武力、智＝智力、政＝政治、魅＝魅力、綜＝五維總和。相性數值 0–149，數值越接近越容易結交。適性等級 S ＞ A ＞ B ＞ C。標有「古」的是古武將（序號 800–831，共 32 名），為三國以外其他時代的名將。</footer>
 </div>
 
 <script>
@@ -118,6 +121,7 @@ const COLS = [
   ['槍',10,'g',1],['戟',11,'g'],['弩',12,'g'],['騎',13,'g'],['兵',14,'g'],['水',15,'g']
 ];
 const GR = {S:4,A:3,B:2,C:1};
+const isOld = r => r[0]>=800; // 古武將：序號 800–831
 const APT = {10:'槍兵',11:'戟兵',12:'弩兵',13:'騎兵',14:'兵器',15:'水軍'};
 let sortCol = 8, dir = -1;
 
@@ -154,8 +158,8 @@ function key(r,i){
 }
 
 function render(){
-  const q=$('q').value.trim(), sk=$('skill').value, ap=$('apt').value;
-  let rows=DATA.filter(r=>(!q||r[2].includes(q)||r[9].includes(q))&&(!sk||r[9]===sk)&&(!ap||r[+ap.slice(0,-1)]===ap.slice(-1)));
+  const q=$('q').value.trim(), sk=$('skill').value, ap=$('apt').value, era=$('era').value;
+  let rows=DATA.filter(r=>(!q||r[2].includes(q)||r[9].includes(q))&&(!sk||r[9]===sk)&&(!ap||r[+ap.slice(0,-1)]===ap.slice(-1))&&(!era||(era==='old')===isOld(r)));
   rows.sort((a,b)=>{
     let x=key(a,sortCol), y=key(b,sortCol), d;
     if (typeof x==='string') {
@@ -175,7 +179,7 @@ function render(){
   body.innerHTML=rows.map(r=>'<tr>'+COLS.map(c=>{
     const v=r[c[1]], g=c[3]?' grp':'';
     switch(c[2]){
-      case 'name': return `<td class="name">${v}</td>`;
+      case 'name': return `<td class="name">${v}${isOld(r)?'<span class="old" title="古武將">古</span>':''}</td>`;
       case 'num': return `<td class="num">${v}</td>`;
       case 'stat': return `<td class="stat${v>=90?' hi':''}${g}"><i style="width:calc((100% - 8px)*${v/100})"></i><span>${v}</span></td>`;
       case 'total': return `<td class="total">${v}</td>`;
@@ -205,8 +209,8 @@ body.addEventListener('click',e=>{
   $('skill').value = $('skill').value===s ? '' : s;
   render();
   document.querySelector('.tablebox').scrollTop=0;
-}); $('apt').onchange=render;
-$('reset').onclick=()=>{$('q').value='';$('skill').value='';$('apt').value='';sortCol=8;dir=-1;render();};
+}); $('apt').onchange=render; $('era').onchange=render;
+$('reset').onclick=()=>{$('q').value='';$('skill').value='';$('apt').value='';$('era').value='';sortCol=8;dir=-1;render();};
 render();
 </script>
 </body>
